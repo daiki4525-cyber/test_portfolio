@@ -1,0 +1,62 @@
+live-streaming-app/
+├─ frontend/                    # Next.js（会員・管理画面）
+│  ├─ app/                      # App Router
+│  │  ├─ login/
+│  │  │  └─ page.tsx
+│  │  ├─ register/
+│  │  │  └─ page.tsx
+│  │  ├─ profile/
+│  │  │  └─ page.tsx
+│  │  ├─ streams/
+│  │  │  └─ page.tsx           # ライブ一覧
+│  │  └─ layout.tsx
+│  ├─ lib/
+│  │  └─ api.ts                # APIラッパー
+│  ├─ public/
+│  ├─ package.json
+│  ├─ tsconfig.json
+│  └─ next.config.js
+│
+├─ backend/                     # API + Socket.IO + SFU
+│  ├─ src/
+│  │  ├─ app.ts                 # Expressエントリ
+│  │  ├─ server.ts              # HTTP + Socket.IO起動
+│  │  ├─ routes/
+│  │  │  ├─ auth.ts             # register / login / logout
+│  │  │  ├─ users.ts            # me / update
+│  │  │  └─ streams.ts          # ライブ管理
+│  │  ├─ middlewares/
+│  │  │  └─ auth.ts             # JWT認証
+│  │  ├─ socket/
+│  │  │  ├─ index.ts            # socket.io初期化
+│  │  │  ├─ comment.ts          # コメント
+│  │  │  └─ signaling.ts        # WebRTCシグナリング
+│  │  ├─ mediasoup/
+│  │  │  ├─ worker.ts
+│  │  │  ├─ router.ts
+│  │  │  ├─ transport.ts
+│  │  │  └─ producer.ts
+│  │  └─ utils/
+│  │     └─ jwt.ts
+│  ├─ prisma/
+│  │  ├─ schema.prisma
+│  │  └─ migrations/
+│  ├─ live/                     # 配信・視聴ページ（静的）
+│  │  ├─ broadcaster.html
+│  │  ├─ viewer.html
+│  │  ├─ js/
+│  │  │  ├─ broadcaster.js
+│  │  │  └─ viewer.js
+│  │  └─ css/
+│  ├─ package.json
+│  ├─ tsconfig.json
+│  └─ .env
+│
+├─ docs/                        # 設計資料
+│  ├─ architecture.md
+│  ├─ webrtc-flow.md
+│  └─ er-diagram.png
+│
+├─ .gitignore
+├─ README.md
+└─ package.json                 # ルート（任意）
