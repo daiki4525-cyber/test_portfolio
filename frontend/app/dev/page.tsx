@@ -1,25 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { login } from "@/lib/api";
 
 export default function LoginPage() {
+  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState("");
   
-  const handleLogin = async () => {
-    try {
-      const data = await login(email, password);
-      setToken(data.token);
-      setError("");
-    } catch {
-      setError("ログイン失敗");
-    }
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+const handleLogin = async () => {
+  try {
+    const data = await login(email, password);
+    console.log("login success:", data);
+    setToken(data.token);
+    localStorage.setItem("token", data.token);
+    setError("");
+  } catch (err) {
+    console.error("login error:", err);
+    setError("ログイン失敗");
+  }
+};
+
 
   return (
     <>
@@ -57,10 +68,12 @@ export default function LoginPage() {
 
                 <button
                 type="button"
+                onClick={handleLogin}
                 className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
                 >
                 ログイン
                 </button>
+
                 {token && (
                     <>
                     <p>✅ ログイン成功</p>

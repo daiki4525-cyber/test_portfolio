@@ -7,19 +7,66 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// 学習用のため画像はローカル保存、本番環境の場合オブジェクトストレージ使用に変更
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   name      String
-  email     String   @unique
+  username  String  @unique
+  email     String  @unique
   password  String
-  createdAt DateTime @default(now())
-  streams   Stream[]
+  bio       String?
+  avatarUrl String?
+
+  streams       Stream[]
+  refreshTokens RefreshToken[]
+
+  // 追加：User が所有する Channel
+  channel       Channel?
+}
+
+// チャンネル
+model Channel {
+  id        Int     @id @default(autoincrement())
+  name      String
+  avatarUrl String?
+  bio       String?        // 新規追加：紹介文
+
+  // 1対多のリレーション
+  streams   Stream[] @relation("ChannelStreams")
+
+  // User と 1対1で紐付け
+  user      User?   @relation(fields: [userId], references: [id])
+  userId    Int?    @unique
 }
 
 model Stream {
+  id          Int          @id @default(autoincrement())
+  title       String
+  description String?
+  thumbnail   String?
+  source      StreamSource
+  externalId  String?      @unique
+
+  // Channelとのリレーション
+  channelId Int
+  channel   Channel @relation("ChannelStreams", fields: [channelId], references: [id])
+
+  User      User?   @relation(fields: [userId], references: [id])
+  userId    Int?
+
+  createdAt DateTime @default(now()) 
+}
+
+enum StreamSource {
+  YOUTUBE
+  INTERNAL
+}
+
+// リフレッシュトークン
+model RefreshToken {
   id        Int      @id @default(autoincrement())
-  title     String
-  userId    Int
+  token     String   @unique
   user      User     @relation(fields: [userId], references: [id])
+  userId    Int
   createdAt DateTime @default(now())
 }

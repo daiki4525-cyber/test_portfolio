@@ -1,62 +1,166 @@
 live-streaming-app/
-├─ frontend/                    # Next.js（会員・管理画面）
-│  ├─ app/                      # App Router
+├─ frontend/                         # フロントエンド（Next.js / App Router）
+│  ├─ app/                          # ルーティング層（URL＝画面）
+│  │  ├─ layout.tsx                 # 全ページ共通レイアウト
+│  │  │                              # - Header / Footer
+│  │  │                              # - AuthProvider を注入
+│  │  │
+│  │  ├─ page.tsx                   # トップページ（配信一覧など）
+│  │  │
 │  │  ├─ login/
-│  │  │  └─ page.tsx
-│  │  ├─ register/
-│  │  │  └─ page.tsx
+│  │  │  └─ page.tsx                # ログイン画面
+│  │  │                              # - APIでログイン
+│  │  │                              # - AuthContext.login() 実行
+│  │  │
 │  │  ├─ profile/
-│  │  │  └─ page.tsx
-│  │  ├─ streams/
-│  │  │  └─ page.tsx           # ライブ一覧
-│  │  └─ layout.tsx
-│  ├─ lib/
-│  │  └─ api.ts                # APIラッパー
-│  ├─ public/
-│  ├─ package.json
-│  ├─ tsconfig.json
-│  └─ next.config.js
+│  │  │  └─ page.tsx                # プロフィール画面（ログイン必須）
+│  │  │                              # - useAuth() でガード
+│  │  │                              # - アバター・自己紹介更新
+│  │  │
+│  │  └─ start-streaming/
+│  │     └─ page.tsx                # 配信開始ページ（ログイン必須）
+│  │                                   # - 自分の配信のみ操作可
+│  │
+│  ├─ components/                   # 再利用 UI コンポーネント
+│  │  ├─ Header.tsx                 # ヘッダー（ログイン状態表示）
+│  │  │                              # - AuthContext を参照
+│  │  │
+│  │  ├─ Footer.tsx                 # フッター
+│  │  │
+│  │  └─ StreamerCard.tsx           # 配信者カード表示用
+│  │                                   # - 純粋な表示コンポーネント
+│  │
+│  ├─ context/
+│  │  └─ AuthContext.tsx            # ?? 認証の唯一の状態管理
+│  │                                 # - JWT を localStorage に保存
+│  │                                 # - decode して user を保持
+│  │                                 # - login / logout を提供
+│  │                                 # ?? フロントの認証の中枢
+│  │
+│  └─ src/                          # ロジック専用ディレクトリ
+│     ├─ hooks/
+│     │  └─ useAuth.ts              # ?? ページガード用カスタムフック
+│     │                               # - 未ログインなら /login リダイレクト
+│     │                               # - user / loading を返す
+│     │
+│     └─ lib/
+│        ├─ api.ts                  # API 通信レイヤー
+│        │                           # - fetch ラッパー
+│        │                           # - Authorization ヘッダ付与
+│        │
+│        └─ auth.ts                 # JWT ユーティリティ
+│                                    # - token 取得
+│                                    # - decode
+│                                    # - 期限切れ判定
 │
-├─ backend/                     # API + Socket.IO + SFU
+├─ backend/                         # バックエンド（Express + Prisma）
 │  ├─ src/
-│  │  ├─ app.ts                 # Expressエントリ
-│  │  ├─ server.ts              # HTTP + Socket.IO起動
+│  │  ├─ routes/                    # ルーティング層（HTTP API）
+│  │  │  ├─ auth.ts                 # 認証 API
+│  │  │  │                           # - login / register
+│  │  │  │                           # - JWT 発行
+│  │  │　│
+│  │  │  ├─ users.ts                # ユーザー関連 API
+│  │  │  │                           # - GET /users/me
+│  │  │  │                           # - PUT /users/me（アバター含む）
+│  │  │　│
+│  │  │  ├─ streams.ts              # 配信関連 API
+│  │  │  │                           # - 配信作成
+│  │  │  │                           # - 自分の配信のみ削除可（権限制御）
+│  │  │　│
+│  │  │  └─ health.ts               # ヘルスチェック
+│  │  │                              # - サーバー稼働確認用
+│  │  │
+│  │  ├─ middlewares/               # 横断的処理
+│  │  │  ├─ auth.ts                 # ?? JWT 認証ミドルウェア
+│  │  │  │                           # - Authorization 検証
+│  │  │  │                           # - req.user 注入
+│  │  │　│
+│  │  │  └─ uploadAvatar.ts         # ?? アバターアップロード専用
+│  │  │                              # - multer 設定
+│  │  │                              # - MIME / サイズ制限
+│  │  │
+│  │  ├─ lib/                       # ビジネスロジック基盤
+│  │  │  ├─ prisma.ts               # PrismaClient 管理
+│  │  │  │                           # - singleton
+│  │  │　│
+│  │  │  └─ auth.ts                 # JWT 発行ロジック
+│  │  │                              # - signToken
+│  │  │                              # - expiresIn 管理
+│  │  │
+│  │  ├─ server.ts                   # サーバーエントリーポイント
+│  │  │
+│  │  │                      # - Express 起動
+│  │  ├─service/                 youtube
+│  │
+│  │                            
+│  │
+│  └─ uploads/
+│     └─ avatars/                   # アップロード済みアバター画像
+│                                    # - 静的ファイル配信対象
+│
+└─ prisma/
+   └─ schema.prisma                 # DB スキーマ定義
+                                    # - User / Stream / Relation
+
+live-streaming-app/
+├─ frontend/
+│  ├─ app/
+│  │  ├─ layout.tsx
+│  │  ├─ page.tsx                # ?? YouTube + 自前配信統合表示
+│  │  │
+│  │  ├─ login/
+│  │  ├─ profile/
+│  │  ├─ start-streaming/
+│  │  │
+│  │  └─ streams/
+│  │     └─ [id]/page.tsx        # ?? 配信詳細ページ（将来YouTube埋め込み可）
+│  │
+│  ├─ components/
+│  │  ├─ Header.tsx
+│  │  ├─ Footer.tsx
+│  │  ├─ StreamerCard.tsx
+│  │  ├─ LiveBadge.tsx           # ?? LIVEバッジ追加
+│  │  └─ ViewerCount.tsx         # ?? 視聴者数表示用
+│  │
+│  ├─ context/
+│  │  └─ AuthContext.tsx
+│  │
+│  └─ src/
+│     ├─ hooks/
+│     │  ├─ useAuth.ts
+│     │  └─ useYouTubeLives.ts   # ?? YouTube取得ロジック分離
+│     │
+│     └─ lib/
+│        ├─ api.ts
+│        ├─ auth.ts
+│        └─ youtube.ts           # ?? YouTube API呼び出し専用ラッパー
+│
+├─ backend/
+│  ├─ src/
 │  │  ├─ routes/
-│  │  │  ├─ auth.ts             # register / login / logout
-│  │  │  ├─ users.ts            # me / update
-│  │  │  └─ streams.ts          # ライブ管理
+│  │  │  ├─ auth.ts
+│  │  │  ├─ users.ts
+│  │  │  ├─ streams.ts
+│  │  │  ├─ youtube.ts          # ?? YouTube APIルート
+│  │  │  └─ health.ts
+│  │  │
 │  │  ├─ middlewares/
-│  │  │  └─ auth.ts             # JWT認証
-│  │  ├─ socket/
-│  │  │  ├─ index.ts            # socket.io初期化
-│  │  │  ├─ comment.ts          # コメント
-│  │  │  └─ signaling.ts        # WebRTCシグナリング
-│  │  ├─ mediasoup/
-│  │  │  ├─ worker.ts
-│  │  │  ├─ router.ts
-│  │  │  ├─ transport.ts
-│  │  │  └─ producer.ts
-│  │  └─ utils/
-│  │     └─ jwt.ts
-│  ├─ prisma/
-│  │  ├─ schema.prisma
-│  │  └─ migrations/
-│  ├─ live/                     # 配信・視聴ページ（静的）
-│  │  ├─ broadcaster.html
-│  │  ├─ viewer.html
-│  │  ├─ js/
-│  │  │  ├─ broadcaster.js
-│  │  │  └─ viewer.js
-│  │  └─ css/
-│  ├─ package.json
-│  ├─ tsconfig.json
-│  └─ .env
+│  │  │  ├─ auth.ts
+│  │  │  └─ uploadAvatar.ts
+│  │  │
+│  │  ├─ lib/
+│  │  │  ├─ prisma.ts
+│  │  │  ├─ auth.ts
+│  │  │  ├─ youtube.ts          # ?? YouTube APIビジネスロジック
+│  │  │  └─ youtubeCache.ts     # ?? API節約キャッシュ層
+│  │  │
+│  │  └─ index.ts
+│  │
+│  └─ uploads/
 │
-├─ docs/                        # 設計資料
-│  ├─ architecture.md
-│  ├─ webrtc-flow.md
-│  └─ er-diagram.png
+├─ prisma/
+│  └─ schema.prisma
 │
-├─ .gitignore
-├─ README.md
-└─ package.json                 # ルート（任意）
+└─ .env
+   YOUTUBE_API_KEY=xxxxx

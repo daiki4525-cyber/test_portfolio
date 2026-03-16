@@ -1,50 +1,62 @@
-const API_BASE_URL = "http://localhost:3001";
-
-export async function fetchStreams() {
-  const res = await fetch(`${API_BASE_URL}/streams`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch streams");
-  }
-
-  return res.json();
-}
-
-export async function createStream(
-  title: string,
-  token: string
-) {
-  const res = await fetch("http://localhost:3001/streams", {
-    method: "POST",
+// フロント共通 API ラッパー
+export async function apiFetch(path: string, options: RequestInit = {}) {
+  return fetch("http://localhost:3001" + path, {
+    ...options,
+    credentials: "include", // Cookie 送信
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(options.headers || {}),
     },
-    body: JSON.stringify({ title }),
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to create stream");
-  }
-
-  return res.json();
 }
 
+// ログイン関数
 export async function login(email: string, password: string) {
-  const res = await fetch("http://localhost:3001/auth/login", {
+  const res = await apiFetch("/auth/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({ email, password }),
   });
 
   if (!res.ok) {
-    throw new Error("Login failed");
+    const errData = await res.json().catch(() => ({}));
+    console.error("[apiLogin] login failed:", errData);
+    throw new Error(errData.message || "Login failed");
   }
 
-  return res.json(); // { token }
+  const data = await res.json();
+  return data.user;
 }
 
+export interface StreamData {
+  id: string;
+  title: string;
+  description: string | null;  // ← 追加
+  thumbnail: string | null;
+  isLive: 0 | 1 | 2; // 0=終了, 1=配信中, 2=配信予定
+  viewerCount: number;
+  scheduledStartTime: string | null;
+  source: "YOUTUBE" | "INTERNAL";
+  channel: {
+    id: number;
+    name: string;
+    avatarUrl: string | null;
+  };
+  user?: { id?: number; name: string; avatarUrl?: string | null;  } | null;
+  createdAt: string;  // ← 追加
+  
+}
+
+/**
+ * 配信一覧を取得する
+ */
+export async function getStreams(): Promise<StreamData[]> {
+  const res = await fetch("http://localhost:3001/api/streams");
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch streams: ${res.status}`);
+  }
+
+  const data = await res.json();
+  // バックエンドは { streams: [...] } の形で返す
+  return data.streams ?? data;
+}

@@ -1,3 +1,5 @@
+"use client";
+
 export function Footer() {
   return (
     <footer className="mt-16 border-t border-gray-700 bg-gradient-to-b from-gray-800 to-gray-900">

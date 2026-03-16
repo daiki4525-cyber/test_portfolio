@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `channel` ADD COLUMN `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE `stream` ADD COLUMN `description` VARCHAR(191) NULL;
