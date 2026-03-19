@@ -35,11 +35,13 @@ app.listen(3001, async () => {
 
   //const channelIds = process.env.YOUTUBE_CHANNEL_IDS.split(',')
 // → ['UCxxxxxxx', 'UCyyyyyyy', 'UCzzzzzzz']
-  const channelId = process.env.YOUTUBE_CHANNEL_ID;
-  if (!channelId) {
-    console.error("YOUTUBE_CHANNEL_ID is not set!");
+  const channelIds = process.env.YOUTUBE_CHANNEL_IDS?.split(",").map(id => id.trim()) ?? [];
+  if (channelIds.length === 0) {
+    console.error("YOUTUBE_CHANNEL_IDS is not set!");
     return;
   }
+  console.log(`[sync] 対象チャンネル数: ${channelIds.length}`);
+
 
   // 開発中はスキップ
   if (process.env.USE_MOCK === "true") {
@@ -47,11 +49,11 @@ app.listen(3001, async () => {
     return;
   }
 
-  await syncYouTubeStreams([channelId]);
+  await syncYouTubeStreams(channelIds);
 
   // 定期同期（3分ごと）
   setInterval(() => {
-    syncYouTubeStreams([channelId]);
+    syncYouTubeStreams(channelIds);
   }, 3 * 60 * 1000);
 });
 

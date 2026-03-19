@@ -6,11 +6,20 @@ export async function syncYouTubeStreams(channelIds: string[]): Promise<void> {
 
   console.log(`[youtubeSync] 同期開始: ${channelIds.length}チャンネル`);
 
+  // ✅ 並列でAPIを叩く（直列→並列に変更）
+  const results = await Promise.allSettled(
+    channelIds.map((id) => getLiveFromChannel(id))
+  );
+
   const allVideos: LiveVideo[] = [];
-  for (const channelId of channelIds) {
-    const videos = await getLiveFromChannel(channelId);
-    allVideos.push(...videos);
-  }
+  results.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      allVideos.push(...result.value);
+    } else {
+      // 1チャンネル失敗しても他は継続
+      console.error(`[youtubeSync] チャンネル取得失敗(${channelIds[i]}):`, result.reason);
+    }
+  });
 
   // 終了済みをスキップ（配信中=1 と 配信予定=2 のみ処理）
   const activeVideos = allVideos.filter((v) => v.isLive !== 0);
@@ -19,17 +28,14 @@ export async function syncYouTubeStreams(channelIds: string[]): Promise<void> {
     `[youtubeSync] 対象動画: ${activeVideos.length}件（全${allVideos.length}件中）`
   );
 
-  for (const video of activeVideos) {
-    await upsertVideoToDb(video);
-  }
+  // DB upsertも並列化
+  await Promise.allSettled(activeVideos.map((video) => upsertVideoToDb(video)));
 
   console.log("[youtubeSync] 同期完了");
 }
 
-//1動画分を DB に upsert する
 async function upsertVideoToDb(video: LiveVideo): Promise<void> {
   try {
-    // 1. Channel を検索 or 作成
     let channel = await prisma.channel.findFirst({
       where: { name: video.channelTitle },
     });
@@ -45,7 +51,6 @@ async function upsertVideoToDb(video: LiveVideo): Promise<void> {
       });
     }
 
-    // 2. Stream を upsert（externalId = videoId で一意）
     await prisma.stream.upsert({
       where: { externalId: video.videoId },
       update: {
@@ -67,7 +72,6 @@ async function upsertVideoToDb(video: LiveVideo): Promise<void> {
 
     console.log(`[youtubeSync] upsert完了: ${video.title}`);
   } catch (err) {
-    // 1動画の失敗で全体を止めない
     console.error(`[youtubeSync] upsertエラー(${video.videoId}):`, err);
   }
 }

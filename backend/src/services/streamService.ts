@@ -19,34 +19,33 @@ export interface StreamDto {
   createdAt: string;
 }
 
-export async function getActiveStreams(): Promise<StreamDto[]> {
-  const [youtubeStreams, internalStreams] = await Promise.all([
-    getYouTubeStreams(),
-    getInternalStreams(),
-  ]);
-  return [...youtubeStreams, ...internalStreams];
-}
-
 async function getYouTubeStreams(): Promise<StreamDto[]> {
-  // TODO: YouTube API 有効化時はコメントを外す
-  //return [];
-
-
   if (process.env.USE_MOCK === "true") {
     console.log("[streamService] MOCK MODE - YouTube APIスキップ");
     return [];
   }
-  
-  const channelIds = process.env.YOUTUBE_CHANNEL_ID;
-  if (!channelIds) {
-    console.warn("[streamService] YOUTUBE_CHANNEL_ID が未設定です");
+
+  const channelIds = process.env.YOUTUBE_CHANNEL_IDS?.split(",").map(id => id.trim()) ?? [];
+  if (channelIds.length === 0) {
+    console.warn("[streamService] YOUTUBE_CHANNEL_IDS が未設定です");
     return [];
   }
 
   try {
-    const videos = await getLiveFromChannel(channelIds);
+    const results = await Promise.allSettled(
+      channelIds.map(id => getLiveFromChannel(id))
+    );
 
-    return videos
+    const allVideos: LiveVideo[] = [];
+    results.forEach((result, i) => {
+      if (result.status === "fulfilled") {
+        allVideos.push(...result.value);
+      } else {
+        console.error(`[streamService] チャンネル取得失敗(${channelIds[i]}):`, result.reason);
+      }
+    });
+
+    return allVideos
       .filter((v) => v.isLive !== 0)
       .map((v): StreamDto => ({
         id: v.videoId,
@@ -69,7 +68,6 @@ async function getYouTubeStreams(): Promise<StreamDto[]> {
     console.error("[streamService] YouTube取得エラー:", err);
     return [];
   }
-  
 }
 
 async function getInternalStreams(): Promise<StreamDto[]> {
@@ -98,4 +96,12 @@ async function getInternalStreams(): Promise<StreamDto[]> {
       : null,
     createdAt: stream.createdAt.toISOString(),
   }));
+}
+
+export async function getActiveStreams(): Promise<StreamDto[]> {
+  const [youtubeStreams, internalStreams] = await Promise.all([
+    getYouTubeStreams(),
+    getInternalStreams(),
+  ]);
+  return [...youtubeStreams, ...internalStreams];
 }
