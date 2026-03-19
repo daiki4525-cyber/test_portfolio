@@ -37,14 +37,14 @@ async function getYouTubeStreams(): Promise<StreamDto[]> {
     return [];
   }
   
-  const channelId = process.env.YOUTUBE_CHANNEL_ID;
-  if (!channelId) {
+  const channelIds = process.env.YOUTUBE_CHANNEL_ID;
+  if (!channelIds) {
     console.warn("[streamService] YOUTUBE_CHANNEL_ID が未設定です");
     return [];
   }
 
   try {
-    const videos = await getLiveFromChannel(channelId);
+    const videos = await getLiveFromChannel(channelIds);
 
     return videos
       .filter((v) => v.isLive !== 0)

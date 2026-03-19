@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import streamsRouter from "./routes/streams";
@@ -34,6 +33,8 @@ app.use("/uploads", express.static("uploads"));
 app.listen(3001, async () => {
   console.log("Server started on 3001");
 
+  //const channelIds = process.env.YOUTUBE_CHANNEL_IDS.split(',')
+// → ['UCxxxxxxx', 'UCyyyyyyy', 'UCzzzzzzz']
   const channelId = process.env.YOUTUBE_CHANNEL_ID;
   if (!channelId) {
     console.error("YOUTUBE_CHANNEL_ID is not set!");
